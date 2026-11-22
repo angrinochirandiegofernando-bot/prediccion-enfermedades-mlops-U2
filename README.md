@@ -47,7 +47,7 @@ La predicción es simulada y tiene fines académicos. No constituye diagnóstico
 
 ## 1. Finalidad del proyecto
 
-Este proyecto implementa el componente de **despliegue y predicción** del pipeline MLOps propuesto en la Unidad 1 (documento del pipeline general, no incluido en este repositorio). Ofrece a un médico un servicio, empaquetado como imagen Docker, en el que introduce los síntomas de un paciente y obtiene uno de cuatro estados:
+Este proyecto implementa el componente de **despliegue y predicción** del pipeline MLOps propuesto en la Unidad 1 (documento del pipeline general, no incluido en este repositorio). Ofrece a un médico un servicio, empaquetado como imagen Docker, en el que introduce los síntomas de un paciente y obtiene uno de cinco estados:
 
 | Estado | Significado (simulado) |
 |---|---|
@@ -55,6 +55,7 @@ Este proyecto implementa el componente de **despliegue y predicción** del pipel
 | `ENFERMEDAD LEVE` | Síntomas de baja intensidad |
 | `ENFERMEDAD AGUDA` | Síntomas intensos y recientes |
 | `ENFERMEDAD CRÓNICA` | Síntomas que persisten 30 días o más |
+| `ENFERMEDAD TERMINAL` | Cuadro grave y persistente: 30 días o más, dificultad respiratoria y puntaje ≥ 6 |
 
 ## 2. Descripción general
 
@@ -87,8 +88,9 @@ Este proyecto implementa el componente de **despliegue y predicción** del pipel
    | Fiebre reportada | +1 |
    | Síntomas de 8 a 29 días | +1 |
 
-2. Si `duracion_dias ≥ 30` y el puntaje es ≥ 1, el estado es **ENFERMEDAD CRÓNICA**.
-3. En otro caso: puntaje 0 → **NO ENFERMO**; 1 – 3 → **ENFERMEDAD LEVE**; ≥ 4 → **ENFERMEDAD AGUDA**.
+2. Si `duracion_dias ≥ 30`, hay dificultad respiratoria y el puntaje es ≥ 6, el estado es **ENFERMEDAD TERMINAL**.
+3. Si no, cuando `duracion_dias ≥ 30` y el puntaje es ≥ 1, el estado es **ENFERMEDAD CRÓNICA**.
+4. En otro caso: puntaje 0 → **NO ENFERMO**; 1 – 3 → **ENFERMEDAD LEVE**; ≥ 4 → **ENFERMEDAD AGUDA**.
 
 ## 3. Requisitos previos
 
@@ -185,7 +187,7 @@ curl http://localhost:5000/health
   "estado": "ok",
   "servicio": "sistema-enfermedades",
   "version_modelo": "simulado-1.0.0",
-  "estados_posibles": ["NO ENFERMO", "ENFERMEDAD LEVE", "ENFERMEDAD AGUDA", "ENFERMEDAD CRÓNICA"]
+  "estados_posibles": ["NO ENFERMO", "ENFERMEDAD LEVE", "ENFERMEDAD AGUDA", "ENFERMEDAD CRÓNICA", "ENFERMEDAD TERMINAL"]
 }
 ```
 
@@ -224,6 +226,7 @@ print(r.json()["estado"])
 | ENFERMEDAD LEVE | `{"temperatura": 37.8, "dolor": 4, "duracion_dias": 3, "dificultad_respiratoria": false, "fiebre": true}` |
 | ENFERMEDAD AGUDA | `{"temperatura": 39.5, "dolor": 8, "duracion_dias": 2, "dificultad_respiratoria": true, "fiebre": true}` |
 | ENFERMEDAD CRÓNICA | `{"temperatura": 37.2, "dolor": 5, "duracion_dias": 60, "dificultad_respiratoria": false, "fiebre": false}` |
+| ENFERMEDAD TERMINAL | `{"temperatura": 39.5, "dolor": 8, "duracion_dias": 60, "dificultad_respiratoria": true, "fiebre": true}` |
 
 ## 12. Ejemplos de respuestas
 
@@ -276,7 +279,7 @@ Las pruebas verifican que:
 - la aplicación inicia y muestra el formulario;
 - `/health` responde;
 - `/predecir` recibe JSON y responde correctamente;
-- se obtienen los cuatro estados;
+- se obtienen los cinco estados;
 - los campos se validan (faltantes, fuera de rango, tipos incorrectos);
 - los errores de entrada se manejan con los códigos HTTP adecuados (400, 405 y 422).
 

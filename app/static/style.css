@@ -12,6 +12,7 @@
   --leve: #b7950b;
   --aguda: #c0392b;
   --cronica: #6c3483;
+  --terminal: #212121;
 }
 
 * { box-sizing: border-box; }
@@ -105,6 +106,7 @@ body {
 .estado-leve { background: var(--leve); }
 .estado-aguda { background: var(--aguda); }
 .estado-cronica { background: var(--cronica); }
+.estado-terminal { background: var(--terminal); }
 
 .detalle { margin: 6px 0; }
 .factores { margin: 4px 0 0; padding-left: 20px; }

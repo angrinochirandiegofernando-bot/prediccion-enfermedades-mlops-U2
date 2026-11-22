@@ -18,6 +18,7 @@ from app.modelo import (  # noqa: E402
     ENFERMEDAD_AGUDA,
     ENFERMEDAD_CRONICA,
     ENFERMEDAD_LEVE,
+    ENFERMEDAD_TERMINAL,
     ESTADOS,
     NO_ENFERMO,
     ErrorValidacion,
@@ -25,7 +26,7 @@ from app.modelo import (  # noqa: E402
     validar_datos,
 )
 
-# Casos representativos que producen cada uno de los cuatro estados.
+# Casos representativos que producen cada uno de los cinco estados.
 CASOS = {
     NO_ENFERMO: dict(temperatura=36.5, dolor=1, duracion_dias=1,
                      dificultad_respiratoria=False, fiebre=False),
@@ -35,6 +36,8 @@ CASOS = {
                            dificultad_respiratoria=True, fiebre=True),
     ENFERMEDAD_CRONICA: dict(temperatura=37.2, dolor=5, duracion_dias=60,
                              dificultad_respiratoria=False, fiebre=False),
+    ENFERMEDAD_TERMINAL: dict(temperatura=39.5, dolor=8, duracion_dias=60,
+                              dificultad_respiratoria=True, fiebre=True),
 }
 
 
@@ -53,7 +56,7 @@ def test_funcion_retorna_cada_estado(esperado, datos):
     assert clasificar_paciente(**datos) == esperado
 
 
-def test_los_cuatro_estados_son_alcanzables():
+def test_los_cinco_estados_son_alcanzables():
     obtenidos = {clasificar_paciente(**d) for d in CASOS.values()}
     assert obtenidos == set(ESTADOS)
 
@@ -65,6 +68,8 @@ def test_la_funcion_usa_las_variables():
     assert clasificar_paciente(**{**base, "dificultad_respiratoria": True}) == ENFERMEDAD_LEVE
     assert clasificar_paciente(**{**base, "temperatura": 39.6, "dolor": 9}) == ENFERMEDAD_AGUDA
     assert clasificar_paciente(**{**base, "duracion_dias": 45, "fiebre": True}) == ENFERMEDAD_CRONICA
+    assert clasificar_paciente(**{**base, "duracion_dias": 45, "temperatura": 39.6, "dolor": 9,
+                                  "dificultad_respiratoria": True}) == ENFERMEDAD_TERMINAL
 
 
 def test_validacion_convierte_tipos_de_formulario():
@@ -100,7 +105,7 @@ def test_health(cliente):
 
 
 @pytest.mark.parametrize("esperado,datos", CASOS.items())
-def test_api_predecir_cuatro_estados(cliente, esperado, datos):
+def test_api_predecir_cinco_estados(cliente, esperado, datos):
     r = cliente.post("/predecir", json=datos)
     assert r.status_code == 200
     cuerpo = r.get_json()
@@ -159,3 +164,9 @@ def test_formulario_web_campos_vacios(cliente):
     r = cliente.post("/", data={"temperatura": "", "dolor": "3"})
     assert r.status_code == 400
     assert "Campo obligatorio" in r.get_data(as_text=True)
+
+
+def test_terminal_requiere_dificultad_respiratoria():
+    """Sin dificultad respiratoria, un cuadro grave y persistente sigue siendo CRÓNICO."""
+    datos = {**CASOS[ENFERMEDAD_TERMINAL], "dificultad_respiratoria": False}
+    assert clasificar_paciente(**datos) == ENFERMEDAD_CRONICA

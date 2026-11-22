@@ -81,7 +81,8 @@
       {% if resultado %}
         {% set clase = {
           'NO ENFERMO': 'sano', 'ENFERMEDAD LEVE': 'leve',
-          'ENFERMEDAD AGUDA': 'aguda', 'ENFERMEDAD CRÓNICA': 'cronica'
+          'ENFERMEDAD AGUDA': 'aguda', 'ENFERMEDAD CRÓNICA': 'cronica',
+          'ENFERMEDAD TERMINAL': 'terminal'
         }[resultado.estado] %}
         <div class="estado estado-{{ clase }}">{{ resultado.estado }}</div>
         <p>{{ resultado.descripcion }}</p>
@@ -94,7 +95,7 @@
         {% endif %}
       {% else %}
         <p class="vacio">Complete el formulario y pulse <strong>Clasificar</strong> para obtener uno de los
-          cuatro estados: NO ENFERMO, ENFERMEDAD LEVE, ENFERMEDAD AGUDA o ENFERMEDAD CRÓNICA.</p>
+          cinco estados: NO ENFERMO, ENFERMEDAD LEVE, ENFERMEDAD AGUDA, ENFERMEDAD CRÓNICA o ENFERMEDAD TERMINAL.</p>
       {% endif %}
     </section>
   </main>

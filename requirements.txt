@@ -1,0 +1,6 @@
+# Servicio web
+flask==3.1.2
+# Servidor WSGI de producción (usado dentro del contenedor Linux)
+gunicorn==23.0.0
+# Pruebas automáticas
+pytest==8.4.2

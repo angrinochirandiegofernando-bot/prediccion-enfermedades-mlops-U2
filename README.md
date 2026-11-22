@@ -111,7 +111,11 @@ prediccion-enfermedades-mlops-U2/
 │   └── static/
 │       └── style.css        # Estilos responsive
 ├── tests/
-│   └── test_app.py          # Pruebas automáticas (pytest)
+│   ├── __init__.py
+│   ├── test_app.py          # Pruebas del servicio (pytest)
+│   └── test_modelo.py       # Pruebas unitarias U2: cinco categorías y estadísticas
+├── .github/workflows/workflow.yaml  # CI/CD con GitHub Actions
+├── conftest.py              # Aísla el archivo de predicciones en las pruebas
 ├── .dockerignore            # Archivos excluidos de la imagen
 ├── Dockerfile               # Definición de la imagen Docker
 ├── requirements.txt         # Dependencias de Python
@@ -330,3 +334,28 @@ docker run -d -p 5000:5000 \
 
 > Un archivo de texto es suficiente para este ejercicio (una sola instancia). En producción, con varias
 > instancias o escrituras concurrentes, se usaría una base de datos.
+
+## 16. Integración y despliegue continuo (GitHub Actions)
+
+El workflow `.github/workflows/workflow.yaml` atiende dos eventos:
+
+| Evento | Job | Qué hace |
+|---|---|---|
+| Pull Request hacia `main` | `pruebas-pull-request` | Comenta el inicio, instala dependencias, ejecuta `pytest` y comenta el éxito si todas las pruebas pasan. |
+| Push a `main` (merge de un PR) | `publicar-imagen` | Ejecuta las pruebas y, si pasan, construye y publica la imagen Docker en GitHub Container Registry. |
+
+La rama `main` está protegida: solo recibe cambios mediante Pull Request.
+
+Pruebas unitarias principales (`tests/test_modelo.py`): obtención de las cinco categorías y registro/consulta de estadísticas.
+
+```bash
+python -m pip install -r requirements.txt
+python -m pytest -v
+```
+
+Imagen publicada:
+
+```bash
+docker pull ghcr.io/angrinochirandiegofernando-bot/prediccion-enfermedades-mlops-u2:latest
+docker run -d -p 5000:5000 -v predicciones_data:/servicio/data ghcr.io/angrinochirandiegofernando-bot/prediccion-enfermedades-mlops-u2:latest
+```

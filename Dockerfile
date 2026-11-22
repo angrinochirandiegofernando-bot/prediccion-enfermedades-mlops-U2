@@ -2,7 +2,7 @@
 # Imagen del Sistema de Clasificación de Síntomas (prototipo académico)
 #
 # Construcción:  docker build -t sistema-enfermedades .
-# Ejecución:     docker run -d -p 5000:5000 --name sistema-medico sistema-enfermedades
+# Ejecución:     docker run -d -p 5000:5000 -v predicciones_data:/servicio/data --name sistema-medico sistema-enfermedades
 # Acceso:        http://localhost:5000
 # ------------------------------------------------------------------
 
@@ -13,7 +13,8 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PORT=5000
+    PORT=5000 \
+    PREDICCIONES_FILE=/servicio/data/predicciones.txt
 
 # Directorio de trabajo dentro del contenedor
 WORKDIR /servicio
@@ -25,11 +26,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 2) Copiar el código fuente y las pruebas
 COPY app/ ./app/
 COPY tests/ ./tests/
+COPY conftest.py ./
 
 # 3) Ejecutar como usuario sin privilegios (buena práctica de seguridad)
 RUN useradd --create-home --uid 1000 medico \
+    && mkdir -p /servicio/data \
     && chown -R medico:medico /servicio
 USER medico
+
+# Carpeta persistente del registro de predicciones (montar un volumen aquí)
+VOLUME ["/servicio/data"]
 
 # Puerto en el que escucha el servicio
 EXPOSE 5000

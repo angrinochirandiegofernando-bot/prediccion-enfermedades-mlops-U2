@@ -61,7 +61,7 @@ Este proyecto implementa el componente de **despliegue y predicción** del pipel
 
 - **Modelo simulado** (`app/modelo.py`): función `clasificar_paciente()` basada en reglas explicables. Usa 5 variables de entrada.
 - **Interfaz web** (`/`): formulario responsive hecho con Flask, HTML y CSS.
-- **API REST**: `POST /predecir` (JSON de entrada y de salida) y `GET /health`.
+- **API REST**: `POST /predecir` (JSON de entrada y de salida), `GET /estadisticas` y `GET /health`.
 - **Registro de predicciones**: cada predicción se escribe en el log del contenedor, solo con variables clínicas y sin datos personales. Esto apoya la etapa de monitoreo del pipeline.
 
 ### Variables de entrada
@@ -105,6 +105,7 @@ prediccion-enfermedades-mlops-U2/
 │   ├── __init__.py          # Paquete de la aplicación
 │   ├── main.py              # Servicio Flask: rutas web y API REST
 │   ├── modelo.py            # Función de clasificación simulada y validaciones
+│   ├── estadisticas.py      # Registro y consulta de estadísticas de predicciones
 │   ├── templates/
 │   │   └── index.html       # Interfaz web (formulario y resultado)
 │   └── static/
@@ -291,3 +292,41 @@ docker rm sistema-medico
 # Opcional: eliminar también la imagen
 docker rmi sistema-enfermedades
 ```
+
+## 15. Estadísticas de predicciones — `GET /estadisticas`
+
+Cada predicción exitosa (formulario web o API) se guarda en un archivo de texto con la fecha y la categoría,
+por ejemplo `2026-11-16 10:30:00 | ENFERMEDAD AGUDA`. Las solicitudes inválidas no se registran.
+La ruta del archivo se define con la variable de entorno `PREDICCIONES_FILE`
+(por defecto `predicciones.txt`; dentro del contenedor `/servicio/data/predicciones.txt`).
+
+```bash
+curl http://localhost:5000/estadisticas
+```
+
+```json
+{
+  "total_predicciones": 3,
+  "total_por_categoria": {"NO ENFERMO": 1, "ENFERMEDAD LEVE": 0, "ENFERMEDAD AGUDA": 1,
+                          "ENFERMEDAD CRÓNICA": 0, "ENFERMEDAD TERMINAL": 1},
+  "ultimas_5_predicciones": [
+    {"fecha": "2026-11-16 10:32:00", "categoria": "ENFERMEDAD TERMINAL"},
+    {"fecha": "2026-11-16 10:31:00", "categoria": "NO ENFERMO"},
+    {"fecha": "2026-11-16 10:30:00", "categoria": "ENFERMEDAD AGUDA"}
+  ],
+  "fecha_ultima_prediccion": "2026-11-16 10:32:00"
+}
+```
+
+### Persistencia en Docker
+Monte un volumen en `/servicio/data` para que el registro no se pierda al eliminar el contenedor:
+
+```bash
+docker run -d -p 5000:5000 \
+  -v predicciones_data:/servicio/data \
+  -e PREDICCIONES_FILE=/servicio/data/predicciones.txt \
+  --name sistema-medico prediccion-enfermedades-mlops-u2
+```
+
+> Un archivo de texto es suficiente para este ejercicio (una sola instancia). En producción, con varias
+> instancias o escrituras concurrentes, se usaría una base de datos.

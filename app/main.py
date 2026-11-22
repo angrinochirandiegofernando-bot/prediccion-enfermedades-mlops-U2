@@ -6,6 +6,7 @@ Rutas:
     POST /          Procesa el formulario y muestra el resultado.
     POST /predecir  API REST: recibe JSON y retorna JSON con el estado.
     GET  /health    Verificación de estado del servicio.
+    GET  /estadisticas  Estadísticas de las predicciones registradas.
 
 Ejecución local (desde la carpeta 02_DOCKER_SERVICIO):
     python -m app.main
@@ -19,6 +20,7 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify, render_template, request
 
+from app import estadisticas
 from app.modelo import ESTADOS, ErrorValidacion, predecir
 
 VERSION_MODELO = "simulado-1.0.0"
@@ -49,6 +51,8 @@ def create_app() -> Flask:
             resultado["puntaje_severidad"],
             resultado["entrada"],
         )
+        # Registro persistente para las estadísticas (solo fecha y categoría).
+        estadisticas.registrar_prediccion(resultado["estado"])
 
     # ------------------------------------------------------------------
     # Interfaz web
@@ -93,6 +97,11 @@ def create_app() -> Flask:
         resultado["version_modelo"] = VERSION_MODELO
         resultado["fecha"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         return jsonify(resultado), 200
+
+    @app.get("/estadisticas")
+    def consultar_estadisticas():
+        """Total por categoría, últimas cinco predicciones y fecha de la más reciente."""
+        return jsonify(estadisticas.obtener_estadisticas()), 200
 
     @app.get("/health")
     def health():

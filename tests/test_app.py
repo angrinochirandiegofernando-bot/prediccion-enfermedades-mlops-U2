@@ -170,3 +170,20 @@ def test_terminal_requiere_dificultad_respiratoria():
     """Sin dificultad respiratoria, un cuadro grave y persistente sigue siendo CRÓNICO."""
     datos = {**CASOS[ENFERMEDAD_TERMINAL], "dificultad_respiratoria": False}
     assert clasificar_paciente(**datos) == ENFERMEDAD_CRONICA
+
+
+def test_estadisticas_registra_solo_predicciones_validas(cliente):
+    vacias = cliente.get("/estadisticas").get_json()
+    assert vacias["total_predicciones"] == 0
+    assert vacias["fecha_ultima_prediccion"] is None
+
+    cliente.post("/predecir", json=CASOS[ENFERMEDAD_AGUDA])
+    cliente.post("/predecir", json=CASOS[NO_ENFERMO])
+    cliente.post("/predecir", json={"temperatura": 37})  # inválida: no se registra
+
+    datos = cliente.get("/estadisticas").get_json()
+    assert datos["total_predicciones"] == 2
+    assert datos["total_por_categoria"][ENFERMEDAD_AGUDA] == 1
+    assert datos["total_por_categoria"][NO_ENFERMO] == 1
+    assert datos["ultimas_5_predicciones"][0]["categoria"] == NO_ENFERMO
+    assert datos["fecha_ultima_prediccion"] is not None

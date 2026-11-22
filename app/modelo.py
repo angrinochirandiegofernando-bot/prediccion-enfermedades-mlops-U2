@@ -22,11 +22,13 @@ Lógica de clasificación (en este orden):
          - Dificultad respiratoria ................... +2
          - Fiebre reportada .......................... +1
          - Síntomas de 8 a 29 días ................... +1
-    2. Si los síntomas persisten 30 días o más y el puntaje es >= 1
+    2. Si los síntomas persisten 30 días o más, hay dificultad respiratoria
+       y el puntaje es >= 6 -> ENFERMEDAD TERMINAL (cuadro grave y persistente).
+    3. Si los síntomas persisten 30 días o más y el puntaje es >= 1
        -> ENFERMEDAD CRÓNICA (la persistencia domina sobre la intensidad).
-    3. Si el puntaje es 0                -> NO ENFERMO
-    4. Si el puntaje está entre 1 y 3    -> ENFERMEDAD LEVE
-    5. Si el puntaje es 4 o más          -> ENFERMEDAD AGUDA
+    4. Si el puntaje es 0                -> NO ENFERMO
+    5. Si el puntaje está entre 1 y 3    -> ENFERMEDAD LEVE
+    6. Si el puntaje es 4 o más          -> ENFERMEDAD AGUDA
 """
 
 from __future__ import annotations
@@ -38,8 +40,15 @@ NO_ENFERMO = "NO ENFERMO"
 ENFERMEDAD_LEVE = "ENFERMEDAD LEVE"
 ENFERMEDAD_AGUDA = "ENFERMEDAD AGUDA"
 ENFERMEDAD_CRONICA = "ENFERMEDAD CRÓNICA"
+ENFERMEDAD_TERMINAL = "ENFERMEDAD TERMINAL"
 
-ESTADOS = (NO_ENFERMO, ENFERMEDAD_LEVE, ENFERMEDAD_AGUDA, ENFERMEDAD_CRONICA)
+ESTADOS = (
+    NO_ENFERMO,
+    ENFERMEDAD_LEVE,
+    ENFERMEDAD_AGUDA,
+    ENFERMEDAD_CRONICA,
+    ENFERMEDAD_TERMINAL,
+)
 
 # Descripción breve que se muestra al médico junto con el resultado.
 DESCRIPCIONES = {
@@ -59,6 +68,11 @@ DESCRIPCIONES = {
         "Los síntomas persisten durante 30 días o más. En un escenario real se "
         "sugeriría seguimiento y estudio especializado."
     ),
+    ENFERMEDAD_TERMINAL: (
+        "Cuadro grave y persistente: síntomas de 30 días o más con dificultad "
+        "respiratoria y severidad alta. En un escenario real se sugeriría "
+        "atención especializada inmediata."
+    ),
 }
 
 # Rangos válidos de las variables numéricas: (mínimo, máximo).
@@ -72,6 +86,7 @@ CAMPOS_BOOLEANOS = ("dificultad_respiratoria", "fiebre")
 CAMPOS_REQUERIDOS = tuple(RANGOS) + CAMPOS_BOOLEANOS
 
 UMBRAL_CRONICO_DIAS = 30
+UMBRAL_TERMINAL_PUNTAJE = 6  # Puntaje mínimo para ENFERMEDAD TERMINAL
 
 
 class ErrorValidacion(ValueError):
@@ -213,14 +228,24 @@ def clasificar_paciente(
     fiebre: bool,
 ) -> str:
     """
-    Retorna uno de los cuatro estados simulados:
-    NO ENFERMO, ENFERMEDAD LEVE, ENFERMEDAD AGUDA o ENFERMEDAD CRÓNICA.
+    Retorna uno de los cinco estados simulados:
+    NO ENFERMO, ENFERMEDAD LEVE, ENFERMEDAD AGUDA, ENFERMEDAD CRÓNICA
+    o ENFERMEDAD TERMINAL.
     """
     puntaje, _ = calcular_puntaje(
         temperatura, dolor, duracion_dias, dificultad_respiratoria, fiebre
     )
 
-    # La persistencia de síntomas se evalúa primero.
+    # Caso más grave primero: síntomas persistentes, dificultad respiratoria y
+    # severidad alta. Va antes de CRÓNICA para que esa regla, más general,
+    # no capture estos casos.
+    if (
+        duracion_dias >= UMBRAL_CRONICO_DIAS
+        and dificultad_respiratoria
+        and puntaje >= UMBRAL_TERMINAL_PUNTAJE
+    ):
+        return ENFERMEDAD_TERMINAL
+    # Luego, la persistencia de síntomas.
     if duracion_dias >= UMBRAL_CRONICO_DIAS and puntaje >= 1:
         return ENFERMEDAD_CRONICA
     if puntaje == 0:
